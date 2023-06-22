@@ -1,16 +1,12 @@
-# Notas de Backend Master Class [Golang + PostgreSQL + Kubernetes + gRPC]
+Notas de Backend Master Class [Golang + PostgreSQL + Kubernetes]
 
-## Descargando postgres
-
-```sh
 docker pull <image>:<tag>
 docker pull postgres:12-alpine
 
 # Un Container es una instancia de una imagen
-```
-## Instalando postgres en un contenedor
 
-```sh
+- Instalando postgres en un contenedor
+
 docker run --name <container_name> -p <host_ports:container_ports> -e <enviroment_variable> -d <image>:<tag>
 
 docker run --name postgres12 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
@@ -22,39 +18,33 @@ ae924fee9427   postgres:12-alpine   "docker-entrypoint.s…"   24 seconds ago   
 docker images
 REPOSITORY   TAG         IMAGE ID       CREATED       SIZE
 postgres     12-alpine   1ace9f47704c   3 weeks ago   211MB
-```
-## Correr comandos dentro de un contenedor
-```sh
+
+- Correr comandos dentro de un contenedor
+
 docker exec -it <container_name_or_id> <command> [args]
 docker exec -it postgres12 psql -U root
 
 root=# select now(); // 2022-09-07 05:09:50.83033+00
 root=# \q // exit
-```
 
-## Ver logs del container
-```sh
+- Ver logs del container
+
 docker logs <container_name_or_id>
 docker logs postgres12
-```
 
-## Configuración dbeaver
-```
+- Configuración dbeaver
 Host=localhost
 Database=root //Igual que el username de default
 Usuario=root
 Contraseña=secret
-```
 
-## Migraciones con postgres y golang
+- Migraciones con postgres y golang
 
-```sh
 go get -u -d github.com/golang-migrate/migrate/cmd/migrate
 
 $ (root_directory) migrate create -extension sql -directorio db/migration -seq_num_migracion_autoincrement schema_name
 $ (root_directory) migrate create -ext sql -dir db/migration -seq init_schema
-```
-```
+
 (000001_init_schema.down.sql)
 	DROP TABLE IF EXISTS entries;
 	DROP TABLE IF EXISTS transfers;
@@ -95,48 +85,22 @@ $ (root_directory) migrate create -ext sql -dir db/migration -seq init_schema
 	ALTER TABLE "transfers" ADD FOREIGN KEY ("from_account_id") REFERENCES "accounts" ("id");
 	ALTER TABLE "transfers" ADD FOREIGN KEY ("to_account_id") REFERENCES "accounts" ("id");
 
-# Esto es porque apartir de las migraciones con el comando UP se pueden regererar las bases de datos y con el comando DOWN se pueden reiniciar secuencialmente.
-# O de otra forma se ejecutan secuencialmente los archivos up.sql o down.sql respectivamente.
-```
-## Alta y baja de contenedores
+Esto es porque apartir de las migraciones con el comando UP se pueden regererar las bases de datos y con el comando DOWN se pueden reiniciar secuencialmente.
+O de otra forma se ejecutan secuencialmente los archivos up.sql o down.sql respectivamente.
 
-```sh
+- Alta y baja de contenedores
 docker stop postgres12
 docker ps //No sale
 docker ps -a //Sale apagado
 docker start postgres12 //Lo pronde de nuevo
-```
 
-## Verificando las migraciones
+- Verificando las migraciones
 
-```sh
 docker exec -it postgres12 /bin/sh
 
 # pwd // /
 # ls -l // directorios
 
 docker exec -it postgres12 createdb --username=root --owner=root simple_bank
-docker exec -it postgres12 psql -U root simple_bank
+docker exec -it postgres12 createdb psql -U root simple_bank
 
-simple_bank=# \q
-
-# Creamos un Makefile
-make dropdb
-make createdb
-
-history | grep "docker run"
-
-docker stop postgres12
-docker ps -a
-docker rm postgres12
-docker ps -a
-
-make postgres
-docker ps
-make createdb
-
-migrate -help
-migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
-
-
-```
